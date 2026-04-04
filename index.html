@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Patrona - Carta</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: radial-gradient(ellipse at center, #3d1f0a 0%, #1a0a00 100%);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, serif;
+      user-select: none;
+      overflow: hidden;
+      gap: 16px;
+    }
+
+    #book {
+      position: relative;
+      width: min(84vw, 390px);
+      aspect-ratio: 3 / 4.6;
+      border-radius: 3px 7px 7px 3px;
+      box-shadow:
+        -5px 0 10px rgba(0,0,0,0.55),
+        8px 8px 36px rgba(0,0,0,0.75);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    /* Spine */
+    #book::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: linear-gradient(to right, rgba(0,0,0,0.45), transparent);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+    }
+
+    .page.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .page img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Navigation */
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(110, 18, 8, 0.82);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      width: 40px;
+      height: 68px;
+      border-radius: 5px;
+      font-size: 1.7rem;
+      cursor: pointer;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, opacity 0.25s;
+    }
+
+    .nav-btn:hover { background: rgba(160, 28, 12, 1); }
+    .nav-btn:disabled { opacity: 0.12; pointer-events: none; }
+
+    #btn-prev { left: 8px; }
+    #btn-next { right: 8px; }
+
+    #bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #dots { display: flex; gap: 11px; }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      cursor: pointer;
+      transition: background 0.25s, transform 0.25s;
+    }
+
+    .dot.on {
+      background: #c0392b;
+      transform: scale(1.4);
+    }
+
+    #lbl {
+      color: rgba(255,255,255,0.32);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div id="book">
+  <div class="page active"><img src="1.png" alt="Desayunos" /></div>
+  <div class="page"><img src="2.jpeg" alt="Carta" /></div>
+  <div class="page"><img src="3.png" alt="Bebidas" /></div>
+</div>
+
+<div id="bottom">
+  <div id="dots"></div>
+  <div id="lbl"></div>
+</div>
+
+<button class="nav-btn" id="btn-prev">&#8249;</button>
+<button class="nav-btn" id="btn-next">&#8250;</button>
+
+<script>
+  const PAGES = ['Desayunos', 'Carta', 'Bebidas'];
+  const pages = document.querySelectorAll('.page');
+  let current = 0;
+  let busy = false;
+
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const dotsEl  = document.getElementById('dots');
+  const lbl     = document.getElementById('lbl');
+
+  PAGES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+
+  function updateUI() {
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === current));
+    btnPrev.disabled = current === 0;
+    btnNext.disabled = current === pages.length - 1;
+    lbl.textContent  = `${current + 1} / ${pages.length}  —  ${PAGES[current]}`;
+  }
+
+  function goTo(target) {
+    if (busy || target === current || target < 0 || target >= pages.length) return;
+    busy = true;
+    pages[current].classList.remove('active');
+    pages[target].classList.add('active');
+    current = target;
+    updateUI();
+    setTimeout(() => { busy = false; }, 520);
+  }
+
+  btnPrev.addEventListener('click', () => goTo(current - 1));
+  btnNext.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+
+  let touchX = 0;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 45) dx < 0 ? goTo(current + 1) : goTo(current - 1);
+  }, { passive: true });
+
+  updateUI();
+</script>
+</body>
+</html>
